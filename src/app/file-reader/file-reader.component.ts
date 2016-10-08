@@ -14,32 +14,29 @@ import { FileValidatorService } from './file-validator.service';
     template: `
     <input id="files" type="file" multiple 
          #input (change)="onChange(input.files)"/>
-    <h4> Valid: {{ (invalid | async)?.length }} </h4>
-    <h4> Invalid: {{ (valid | async)?.length }} </h4>
+
 
     `,
     providers: [FileValidatorService]
 })
 export class FileReaderComponent implements OnInit {
 
-    valid: Observable<File[]>;
-    invalid: Observable<File[]>;
+    valid: Observable<number>;
+    invalid: Observable<number>;
 
     constructor(private fileValidator: FileValidatorService) {
     }
 
     ngOnInit() {
-        this.invalid = this.fileValidator.invalid$
-        this.valid = this.fileValidator.valid$;
+
     }
 
     onChange(files: File[]) {
         this.validateFiles(files);
-        this.convertFiles(files);
     }
 
     private validateFiles(files: File[]) {
-        this.fileValidator.setFiles(files);
+        this.fileValidator.validateNames(files);
     }
 
     private convertFiles(files: File[]) {
