@@ -30,7 +30,7 @@ import { HandConverterService } from './hand-converter.service';
                 </ul>
             </div>
         </div>
-
+        <button class="btn">Test</button>
 
 
     `,
@@ -55,11 +55,6 @@ export class FileReaderComponent implements OnInit {
         this.validateFinished = this.fileValidator.validateFinished$;
 
         this.fileValidator.filteredFiles$
-            // .map(files => files.map(f => {
-            //     let reader = new FileReader();
-            //     let text = reader.readAsText(f);
-            //     return  reader.onload = (e) => e.target['result']
-            // }))
             .subscribe(name => console.log(name));
 
     }
@@ -69,7 +64,6 @@ export class FileReaderComponent implements OnInit {
     }
 
     onChange(files: File[]) {
-
-        this.fileValidator.setFiles(files);
+       this.fileValidator.setFiles(files);
     }
 }
