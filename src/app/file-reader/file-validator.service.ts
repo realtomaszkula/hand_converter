@@ -21,40 +21,39 @@ export class FileValidatorService {
     private validateResultsSource = new BehaviorSubject<ValidateResults>({} as ValidateResults);
     validateResults$ = this.validateResultsSource.asObservable();
 
-    private files: File[];
-    private filteredFiles: File[];
+    private filteredFilesSource = new BehaviorSubject<File[]>([]);
+    filteredFiles$ = this.filteredFilesSource.asObservable();
 
     setFiles(files: File[]) {
-        this.files = Array.from(files);
-        this.validateNames();
+        this.validateNames(Array.from(files));
     }
 
-    private validateNames(): void {
+    private validateNames(files: File[]): void {
         this.validateFinishedSource.next(false);
 
         let log: string[] = [];
-        let files = this.files;
 
         let result: ValidateResults = {
-            total: this.files.length,
+            total: files.length,
             valid: 0,
             invalid: 0
         }
 
-        this.filteredFiles = 
-            this.files.filter((file: File) => {
+        let filteredFiles = 
+            files.filter((file: File) => {
                 let isValid = this.validateName(file);
 
                 if (isValid) {
                     result.valid++;
                 } else {
                     result.invalid++;
-                    log.push(`${file.name} name is incorrect, accepting only txt files!`);
+                    log.push(`${file.name} - incorrect file extension.`);
                 }
 
                 return isValid;
             })
-            console.log(result);
+
+        this.filteredFilesSource.next(filteredFiles);
         this.validateLogSource.next(log);
         this.validateResultsSource.next(result)
         this.validateFinishedSource.next(true);

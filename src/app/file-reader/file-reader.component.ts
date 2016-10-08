@@ -2,7 +2,11 @@ import { Component, OnInit } from '@angular/core';
 import { Subject } from 'rxjs/Subject';
 import { Observable } from 'rxjs/Observable';
 
+import 'rxjs/add/operator/map';
+import 'rxjs/add/operator/scan';
+
 import { FileValidatorService, ValidateResults} from './file-validator.service';
+import { HandConverterService } from './hand-converter.service';
 
 @Component({
     selector: 'file-reader',
@@ -17,12 +21,14 @@ import { FileValidatorService, ValidateResults} from './file-validator.service';
                 <li> Valid: {{ (validateResults | async)?.valid  }} </li>
                 <li> Invalid: {{ (validateResults | async)?.invalid  }} </li>
             </ul> 
-            Log:
-            <ul class="log">
-                <li *ngFor="let msg of validateLog | async">
-                    {{msg}}
-                </li>
-            </ul>
+            <div *ngIf="(validateLog | async).length">
+                Log:
+                <ul class="log" >
+                    <li *ngFor="let msg of validateLog | async">
+                        {{msg}}
+                    </li>
+                </ul>
+            </div>
         </div>
 
 
@@ -35,7 +41,7 @@ import { FileValidatorService, ValidateResults} from './file-validator.service';
             overflow: scroll;
         }    
     `],
-    providers: [FileValidatorService]
+    providers: [FileValidatorService, HandConverterService ]
 })
 export class FileReaderComponent implements OnInit {
 
@@ -43,10 +49,19 @@ export class FileReaderComponent implements OnInit {
     validateResults: Observable<ValidateResults>;
     validateFinished: Observable<boolean>;
 
-    constructor(private fileValidator: FileValidatorService) {
+    constructor(private fileValidator: FileValidatorService, private handConverter: HandConverterService) {
         this.validateLog = this.fileValidator.validateLog$;
         this.validateResults = this.fileValidator.validateResults$;
         this.validateFinished = this.fileValidator.validateFinished$;
+
+        this.fileValidator.filteredFiles$
+            // .map(files => files.map(f => {
+            //     let reader = new FileReader();
+            //     let text = reader.readAsText(f);
+            //     return  reader.onload = (e) => e.target['result']
+            // }))
+            .subscribe(name => console.log(name));
+
     }
 
     ngOnInit() {
@@ -54,6 +69,7 @@ export class FileReaderComponent implements OnInit {
     }
 
     onChange(files: File[]) {
+
         this.fileValidator.setFiles(files);
     }
 }
