@@ -1,7 +1,10 @@
 import { Injectable, OnInit } from '@angular/core';
 import { Subject } from 'rxjs/Subject';
+import { Observable } from 'rxjs/Observable';
+import { Observer } from 'rxjs/Observer';
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 
+import 'rxjs/add/observable/fromEvent';
 
 export interface ValidateResults {
    valid: number,
@@ -12,55 +15,23 @@ export interface ValidateResults {
 @Injectable()
 export class FileValidatorService {
 
-    private validateLogSource = new BehaviorSubject<string[]>([]);
-    validateLog$ = this.validateLogSource.asObservable();
-
-    private validateFinishedSource = new BehaviorSubject<boolean>(false);
-    validateFinished$ = this.validateFinishedSource.asObservable();
-
-    private validateResultsSource = new BehaviorSubject<ValidateResults>({} as ValidateResults);
-    validateResults$ = this.validateResultsSource.asObservable();
-
-    private filteredFilesSource = new BehaviorSubject<File[]>([]);
-    filteredFiles$ = this.filteredFilesSource.asObservable();
+    private progressSource = new Subject<number>();
+    progress$ = this.progressSource.asObservable();
 
     setFiles(files: File[]) {
-        this.validateNames(Array.from(files));
-    }
 
-    private validateNames(files: File[]): void {
-        this.validateFinishedSource.next(false);
-
-        let log: string[] = [];
-
-        let result: ValidateResults = {
-            total: files.length,
-            valid: 0,
-            invalid: 0
+        for (let i = 0; i < files.length; i++) {
+            let reader = new FileReader();
+            reader.onload = (e) => {
+                let progress = Math.ceil(i * 100 / files.length);;
+                this.progressSource.next(progress) 
+            };
+            reader.readAsText(files[i]);
         }
-
-        let filteredFiles = 
-            files.filter((file: File) => {
-                let isValid = this.validateName(file);
-
-                if (isValid) {
-                    result.valid++;
-                } else {
-                    result.invalid++;
-                    log.push(`${file.name} - incorrect file extension.`);
-                }
-
-                return isValid;
-            })
-
-        this.filteredFilesSource.next(filteredFiles);
-        this.validateLogSource.next(log);
-        this.validateResultsSource.next(result)
-        this.validateFinishedSource.next(true);
-
     }
 
     private validateName(file: File) {
         return (/\.txt$/).test(file.name);
     }
 }
+
