@@ -1,16 +1,13 @@
-
-const validate = (name) => (/\.txt$/).test(name);
-
 addEventListener('message', (e) => {
     let files: File[] = e.data;
-    let 
-        valid = 0,
-        invalid = 0;
 
-    for (let file of files) {
-        validate(file.name) ? valid++ : invalid++;
+    for (let i = 0; i < files.length; i++) {
+        let reader = new FileReader();
+        reader.onload = (e) => {
+            let progress = Math.ceil(i * 100 / files.length);
+            postMessage(progress, undefined);
+        };
+        reader.readAsText(files[i]);
     }
-
-    postMessage({ valid: valid, invalid: invalid }, undefined);
 });
 

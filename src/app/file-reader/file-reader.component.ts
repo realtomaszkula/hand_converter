@@ -1,11 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { Subject } from 'rxjs/Subject';
 import { Observable } from 'rxjs/Observable';
 
-import 'rxjs/add/operator/do';
-import 'rxjs/add/operator/scan';
+import 'rxjs/add/operator/map';
 
-import { FileValidatorService, ValidateResults} from './file-validator.service';
+import { FileValidatorService } from './file-validator.service';
 import { HandConverterService } from './hand-converter.service';
 
 @Component({
@@ -14,9 +13,8 @@ import { HandConverterService } from './hand-converter.service';
     <input id="files" type="file" multiple 
          #input (change)="onChange(input.files)"/>
 
-    <progress [value]="progress$ | async" max="100"></progress>
+        <progress max="100" [value]="progressCounter"> </progress>
 
-         
     `,
     styles: [ `
         .log { 
@@ -29,14 +27,16 @@ import { HandConverterService } from './hand-converter.service';
 })
 export class FileReaderComponent implements OnInit {
 
-    progress$: Observable<number>;
+    progressCounter = 0;
 
-    constructor(private fileValidator: FileValidatorService, private handConverter: HandConverterService) {
-      this.progress$ = this.fileValidator.progress$;
+    constructor(private fileValidator: FileValidatorService, private handConverter: HandConverterService, private cd: ChangeDetectorRef) {
     }
 
     ngOnInit() {
-
+      this.fileValidator.progress$.subscribe(progress => {
+          this.progressCounter = progress;
+          this.cd.detectChanges();
+      })
     }
 
     onChange(files: File[]) {

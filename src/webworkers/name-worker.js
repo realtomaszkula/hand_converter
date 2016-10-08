@@ -1,10 +1,14 @@
-var validate = function (name) { return (/\.txt$/).test(name); };
 addEventListener('message', function (e) {
     var files = e.data;
-    var valid = 0, invalid = 0;
-    for (var _i = 0; _i < files.length; _i++) {
-        var file = files[_i];
-        validate(file.name) ? valid++ : invalid++;
+    var _loop_1 = function(i) {
+        var reader = new FileReader();
+        reader.onload = function (e) {
+            var progress = Math.ceil(i * 100 / files.length);
+            postMessage(progress, undefined);
+        };
+        reader.readAsText(files[i]);
+    };
+    for (var i = 0; i < files.length; i++) {
+        _loop_1(i);
     }
-    postMessage({ valid: valid, invalid: invalid }, undefined);
 });
