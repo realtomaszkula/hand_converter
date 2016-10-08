@@ -2,11 +2,6 @@ import { Component, OnInit } from '@angular/core';
 import { Subject } from 'rxjs/Subject';
 import { Observable } from 'rxjs/Observable';
 
-import 'rxjs/add/operator/map';
-import 'rxjs/add/operator/delay';
-import 'rxjs/add/operator/do';
-import 'rxjs/add/observable/of';
-
 import { FileValidatorService } from './file-validator.service';
 
 @Component({
@@ -15,16 +10,20 @@ import { FileValidatorService } from './file-validator.service';
     <input id="files" type="file" multiple 
          #input (change)="onChange(input.files)"/>
 
+         <div *ngFor="let msg of validateLog | async">
+            {{msg}}
+         </div>
+
 
     `,
     providers: [FileValidatorService]
 })
 export class FileReaderComponent implements OnInit {
 
-    valid: Observable<number>;
-    invalid: Observable<number>;
+    validateLog: Observable<string[]>
 
     constructor(private fileValidator: FileValidatorService) {
+        this.validateLog = this.fileValidator.validateLog$;
     }
 
     ngOnInit() {
@@ -32,15 +31,6 @@ export class FileReaderComponent implements OnInit {
     }
 
     onChange(files: File[]) {
-        this.validateFiles(files);
+        this.fileValidator.setFiles(files);
     }
-
-    private validateFiles(files: File[]) {
-        this.fileValidator.validateNames(files);
-    }
-
-    private convertFiles(files: File[]) {
-
-    }
-
 }

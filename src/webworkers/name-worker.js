@@ -1,17 +1,10 @@
-
-const validate = (name) => (/\.txt$/).test(name);
-
-addEventListener('message', (e) => {
-
-    let 
-        valid = 0,
-        invalid = 0;
-
-    for (let f of e.data) {
-        validate(f.name) ? valid++ : invalid++;
+var validate = function (name) { return (/\.txt$/).test(name); };
+addEventListener('message', function (e) {
+    var files = e.data;
+    var valid = 0, invalid = 0;
+    for (var _i = 0; _i < files.length; _i++) {
+        var file = files[_i];
+        validate(file.name) ? valid++ : invalid++;
     }
-
-    postMessage({ valid: valid, invalid: invalid });
-
+    postMessage({ valid: valid, invalid: invalid }, undefined);
 });
-
