@@ -12,18 +12,29 @@ import { FileValidatorService, ValidateResults} from './file-validator.service';
 
          <div *ngIf="validateFinished | async">
             Uploaded:  
-                <ul> 
-                    <li> Total: {{ (validateResults | async)?.total  }} </li>
-                    <li> Valid: {{ (validateResults | async)?.valid  }} </li>
-                    <li> Invalid: {{ (validateResults | async)?.invalid  }} </li>
-                </ul> 
+            <ul> 
+                <li> Total: {{ (validateResults | async)?.total  }} </li>
+                <li> Valid: {{ (validateResults | async)?.valid  }} </li>
+                <li> Invalid: {{ (validateResults | async)?.invalid  }} </li>
+            </ul> 
+            Log:
+            <ul class="log">
+                <li *ngFor="let msg of validateLog | async">
+                    {{msg}}
+                </li>
+            </ul>
         </div>
-         <div *ngFor="let msg of validateLog | async">
-            {{msg}}
-         </div>
+
 
 
     `,
+    styles: [ `
+        .log { 
+            background-color: #e6e6e6;
+            height: 400px;
+            overflow: scroll;
+        }    
+    `],
     providers: [FileValidatorService]
 })
 export class FileReaderComponent implements OnInit {

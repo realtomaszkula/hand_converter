@@ -12,7 +12,7 @@ export interface ValidateResults {
 @Injectable()
 export class FileValidatorService {
 
-    private validateLogSource = new Subject<string[]>();
+    private validateLogSource = new BehaviorSubject<string[]>([]);
     validateLog$ = this.validateLogSource.asObservable();
 
     private validateFinishedSource = new BehaviorSubject<boolean>(false);
