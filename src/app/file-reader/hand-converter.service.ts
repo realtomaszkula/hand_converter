@@ -61,8 +61,15 @@ export class HandConverterService {
 
     /*
         Capture groups:
-        1st: entire string ex: collected $2424.24
-        2nd: 2424.24
+        1st: entire string ex: bets $80.42
+        2nd: raises from: 80.42
+    */
+    private uncalledBetRegExp = /Uncalled bet \(\$(\d+\.\d+|\d+)\)/
+
+    /*
+        Capture groups:
+        1st: entire string ex: Uncalled bet ($186)
+        2nd:186
     */
     private collectedFromRegExp = /collected \$(\d+\.\d+|\d+)/
 
@@ -132,6 +139,7 @@ export class HandConverterService {
             this.replaceAntes,
             this.replaceRaises,
             this.replaceCallsAndBets,
+            this.replaceUncalledBets,
             this.replaceCollectedFromPot,
             // this.replaceSummarySidePot,
             // this.replaceSummaryMainPot,
@@ -201,6 +209,11 @@ export class HandConverterService {
     public replaceCallsAndBets = (handArr: string[]): string[] => {
         let region = this.handRegions.postflop;
         return this.reduceHand(handArr, this.callsOrBetsRegExp, region.start, region.end);
+    }
+
+    public replaceUncalledBets = (handArr: string[]): string[] => {
+        let region = this.handRegions.postflop;
+        return this.reduceHand(handArr, this.uncalledBetRegExp, region.start, region.end);
     }
 
     public replaceCollectedFromPot = (handArr: string[]): string[] => {
