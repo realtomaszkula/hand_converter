@@ -1,12 +1,22 @@
 import { NgModule } from '@angular/core';
 import { Routes, RouterModule } from '@angular/router';
 
-import { FileReaderComponent } from './file-reader/file-reader.component';
+import { MultiFileReaderComponent } from './file-reader/multi-file-reader.component';
+import { SingleFileReaderComponent } from './file-reader/single-file-reader.component';
 
 const routes: Routes = [
   {
     path: '',
-    component: FileReaderComponent
+    redirectTo: 'files',
+    pathMatch: 'full'
+  },
+  {
+    path: 'files',
+    component: MultiFileReaderComponent
+  },
+  {
+    path: 'file',
+    component: SingleFileReaderComponent
   }
 ];
 

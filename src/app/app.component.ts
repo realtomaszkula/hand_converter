@@ -5,10 +5,10 @@ import { Component } from '@angular/core';
   template: `
     <ul class="nav nav-tabs nav-justified">
       <li role="presentation" routerLinkActive="active">
-        <a routerLink="/">Multiple Hands</a>
+        <a routerLink="/files">Multiple Hands</a>
       </li>
       <li role="presentation" routerLinkActive="active">
-        <a routerLink="/single">Single Hand</a>
+        <a routerLink="/file">Single Hand</a>
       </li>
     </ul>
     <router-outlet> <router-outlet>

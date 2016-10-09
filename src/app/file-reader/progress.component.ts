@@ -5,7 +5,7 @@ import { Component, Input } from '@angular/core';
     template: `
         <div class="progress">
             <div class="progress-bar" role="progressbar" [style.width]="value + '%'">
-                    <span> {{value}}% Complete </span>
+                    <span> {{value}}% </span>
             </div>
         </div>
     `

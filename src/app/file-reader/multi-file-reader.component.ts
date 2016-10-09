@@ -23,7 +23,7 @@ import { HandConverterService } from './hand-converter.service';
     `],
     providers: [FileValidatorService, HandConverterService ]
 })
-export class FileReaderComponent implements OnInit {
+export class MultiFileReaderComponent implements OnInit {
 
     progressCounter = 0;
 
