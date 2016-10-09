@@ -8,13 +8,12 @@ import { FileValidatorService } from './file-validator.service';
 import { HandConverterService } from './hand-converter.service';
 
 @Component({
-    selector: 'file-reader',
-    template: `
+        template: `
     <input id="files" type="file" multiple 
          #input (change)="onChange(input.files)"/>
 
         <progress max="100" [value]="progressCounter"> </progress>
-
+        <drag-and-drop></drag-and-drop>
     `,
     styles: [ `
         .log { 
