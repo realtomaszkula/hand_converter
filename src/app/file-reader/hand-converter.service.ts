@@ -268,7 +268,7 @@ export class HandConverterService {
         if (convertedPot < 60) rake = 1;
 
         // create new rake and pot string
-        let newPot = convertedPot + rake;
+        let newPot = this.convertToFloat(convertedPot + rake);
         let newRakeString = rakeString.replace(rakeValue, rake + '')
         let newPotString = potString.replace(potValue, newPot + '');
 
@@ -310,9 +310,12 @@ export class HandConverterService {
     }
 
     public convertToMockStakes = (curr: string): string => {
-       return  (+curr / this.stakeModifier)
-                        .toFixed(2)
-                        .replace(/\.00$/, ''); 
+       return this.convertToFloat(+curr / this.stakeModifier);
+
+    }
+
+    public convertToFloat = (num: number): string => {
+        return num.toFixed(2).replace(/\.00$/, ''); 
     }
 
     public transformString = (originalString: string, regExp: RegExp): string => {
