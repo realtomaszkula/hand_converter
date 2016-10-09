@@ -42,7 +42,7 @@ export class HandConverterService {
 
         only one capture group of 2..4 will return truthy value
     */
-    private blindsRegExp = /posts small blind \$(\d+)|posts big blind \$(\d+)|posts big & small blind \$(\d+)|posts small & big blinds \$(\d+\.\d+|\d+)/;
+    private blindsRegExp = /posts small blind \$(\d+\.\d+|\d+|)|posts big blind \$(\d+\.\d+|\d+|)|posts big & small blind \$(\d+\.\d+|\d+|)|posts small & big blinds \$(\d+\.\d+|\d+)/;
 
     /*
         Capture groups:
@@ -50,7 +50,7 @@ export class HandConverterService {
         2nd: raises from: 719
         3rd: raises to: 982.25
     */
-    private raisesRegExp = /raises \$(\d+|\d+\.\d+) to \$(\d+\.\d+|\d+)/
+    private raisesRegExp = /raises \$(\d+\.\d+|\d+|) to \$(\d+\.\d+|\d+)/
 
     /*
         Capture groups:
@@ -101,6 +101,20 @@ export class HandConverterService {
     */
     private sidePotRegExp = /Side pot \$(\d+\.\d+|\d+)/
 
+    /*
+        Capture groups:
+        1st: entire string ex: Total pot $1444.80
+        2nd: 1444.80
+    */
+    private totalPotRegExp = /^Total pot \$(\d+\.\d+|\d+)/
+
+    /*
+        Capture groups:
+        1st: entire string ex: Rake $2.75
+        2nd: 2.75
+    */
+    private rakeRegExp = /Rake \$(\d+\.\d+|\d+)$/
+
     private _convertedHands: string[];
 
     private _convertedHand: string;
@@ -144,7 +158,7 @@ export class HandConverterService {
             this.replaceCollectedFromPot,
             this.replaceSummarySidePot,
             this.replaceSummaryMainPot,
-            // // this.replaceSummaryTotalPot,
+            this.replaceSummaryTotalPot,
             this.replaceSummarySeatPot
         ] 
 
@@ -239,15 +253,39 @@ export class HandConverterService {
 
 
     public replaceSummaryTotalPot = (handArr:string[]): string[] => {
-        let region = this.handRegions.summary;
-        return this.reduceHand(handArr, /asdasdasdasd/, region.start, region.end);
+        // this is the string with hand summary ex: Total pot $1223 | Rake $3 
+        let i = this.handRegions.summary.start + 1;
+        const originalString = handArr[i];
+
+        let [potString, potValue] = this.totalPotRegExp.exec(originalString)     
+        let [rakeString, rakeValue] =    this.rakeRegExp.exec(originalString)
+
+        let pot = +potValue;
+        let rake = +rakeValue;
+        let potWithoutRake = pot - rake;
+
+        // calculate new pot and adjust rake to represent more believable rake at lower pots
+        let convertedPot = pot / this.stakeModifier;
+        if (convertedPot < 60) rake = 1;
+
+        // create new rake and pot string
+        let newPot = convertedPot + rake;
+        let newRakeString = rakeString.replace(rakeValue, rake + '')
+        let newPotString = potString.replace(potValue, newPot + '');
+
+        // update original string with new values
+        let result = originalString
+                        .replace(potString, newPotString)
+                        .replace(rakeString, newRakeString)
+
+        handArr[i] = result;
+        return handArr;
     }
 
      public replaceSummarySeatPot = (handArr: string[]): string[] => {
         let region = this.handRegions.summary;
         return this.reduceHand(handArr, this.summaryAndWonRegExp, region.start, region.end);
     }
-
 
 
     // Helper functions
@@ -272,6 +310,12 @@ export class HandConverterService {
         }, []);
     }
 
+    public convertToMockStakes = (curr: string): string => {
+       return  (+curr / this.stakeModifier)
+                        .toFixed(2)
+                        .replace(/\.00$/, ''); 
+    }
+
     public transformString = (originalString: string, regExp: RegExp): string => {
         let matches = regExp.exec(originalString);
         if (!matches) return originalString;
@@ -280,13 +324,7 @@ export class HandConverterService {
         captureGroups = captureGroups.filter(group => group);
 
         let newStringSlice = captureGroups.reduce((acc, curr) => {
-            let newCurr = (+curr / this.stakeModifier)
-                        .toFixed(2)
-                        /*
-                         remove trailing zeroes for all rational numbers so 1.00 will change to 1 and 2.40 will stay as is
-                        */
-                        .replace(/\.00$/, ''); 
-
+            let newCurr = this.convertToMockStakes(curr);
             return acc.replace(curr as any, newCurr as any);
         }, oldStringSlice)
 
