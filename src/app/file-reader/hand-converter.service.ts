@@ -130,7 +130,8 @@ export class HandConverterService {
     }
 
     private convert(hand: string) {
-        let slicedHand = hand.split('\n')
+        let slicedHand: string[] = this.trimAndSlice(hand);
+
         this.setHandRegions(slicedHand)
         // to allow for chaining each fn must accept and return string[]
         let pipeline: PipelineFn[] = [
@@ -149,6 +150,11 @@ export class HandConverterService {
         ] 
 
         return pipeline.reduce((acc, fn) => fn(acc) , slicedHand).join('\n');
+    }
+
+    private trimAndSlice(hand: string): string[] {
+        let slicedHand = hand.trim().split('\n');
+        return slicedHand.map(line => line.trim());
     }
 
     private setHandRegions(handArr: string[]): void {
@@ -275,7 +281,12 @@ export class HandConverterService {
         captureGroups = captureGroups.filter(group => group);
 
         let newStringSlice = captureGroups.reduce((acc, curr) => {
-            let newCurr = (+curr / this.stakeModifier).toFixed(2)
+            let newCurr = (+curr / this.stakeModifier)
+                        .toFixed(2)
+                        /*
+                         remove trailing zeroes for all rational numbers so 1.00 will change to 1 and 2.40 will stay as is
+                        */
+                        .replace(/\.00$/, ''); 
 
             return acc.replace(curr as any, newCurr as any);
         }, oldStringSlice)
