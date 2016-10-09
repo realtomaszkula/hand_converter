@@ -24,8 +24,7 @@ export class HandConverterService {
         2nd: small blind ex: 50
         3rd: big blind ex: 100
     */
-    // private stakesRegExp = /\(\$(\d+|\d+\.\d+)\/\$(\d+|\d+\.\d+)(?:\sUSD\)|\))/;
-    private stakesRegExp = /\(\$(\d+)\/\$(\d+)(?:\sUSD\)|\))/;
+    private stakesRegExp = /\(\$(\d+\.*\d+)\/\$(\d+\.*\d+)(?:\sUSD\)|\))/;
     
     /*
         Capture groups:
