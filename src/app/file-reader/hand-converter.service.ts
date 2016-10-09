@@ -88,7 +88,7 @@ export class HandConverterService {
     private convert(hand: string) {
         let slicedHand = hand.split('\n')
         this.setHandRegions(slicedHand)
-        // to allow for chaining each fn must accept and return string
+        // to allow for chaining each fn must accept and return string[]
         let pipeline: PipelineFn[] = [
             this.replaceMetadata,
             this.replaceStacks,
@@ -205,7 +205,7 @@ export class HandConverterService {
 
         let newStringSlice = captureGroups.reduce((acc, curr) => {
             let newCurr = +curr / this.stakeModifier
-            return acc.replace(curr, newCurr);
+            return acc.replace(curr as any, newCurr as any);
         }, oldStringSlice)
 
         return originalString.replace(oldStringSlice, newStringSlice);
