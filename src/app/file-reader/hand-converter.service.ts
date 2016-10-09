@@ -19,19 +19,18 @@ export class HandConverterService {
 
     /* 
         Capture groups: 
-        1st: entire stakes string ex: ($50/$100 USD) or ($50/$100) 
-            (stars appends USD suffix for zoom hands)
+        1st: entire stakes string ex: ($50/$100)
         2nd: small blind ex: 50
         3rd: big blind ex: 100
     */
-    private stakesRegExp = /\(\$(\d+\.*\d+)\/\$(\d+\.*\d+)(?:\sUSD\)|\))/;
+    private stakesRegExp = /\(\$(\d+\.\d+|\d+|)\/\$(\d+\.\d+|\d+|)/;
     
     /*
         Capture groups:
         1st: entire string ex: ($783.50 in chips) 
         2nd: naked stack ex: 783.50
     */
-    private stacksRegExp = /\(\$(\d+\.*\d+)\sin chips\)/;
+    private stacksRegExp = /\(\$(\d+\.\d+|\d+|) in chips/;
 
     /*
         Capture groups: 
@@ -333,7 +332,7 @@ export class HandConverterService {
 
     public createNewMetadata = (originalString: string): string => {
         let matches = this.stakesRegExp.exec(originalString)
-        if (!matches) return originalString;
+        if (!matches) console.error('Cannot read the stakes');
 
         let [stakesString, sb, bb] = matches;
 
