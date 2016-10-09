@@ -2,12 +2,20 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs/Observable';
 import { Subject } from 'rxjs/Subject';
 
-type PipeLineFunction = (string) => string;
+interface HandRegions {
+    preflop: { start: number, end: number},
+    postflop: { start: number, end: number},
+    summary: { start: number, end: number}
+}
+interface PipelineFn {
+    (source: string[]): string[];
+}
 
 @Injectable()
 export class HandConverterService {
 
     private stakeModifier: number;
+    private handRegions: HandRegions;
 
     /* 
         Capture groups: 
@@ -51,6 +59,13 @@ export class HandConverterService {
     */
     private callsOrBetsRegExp = /bets \$(\d+\.\d+|\d+|)|calls \$(\d+\.\d+|\d+)/
 
+    /*
+        Capture groups:
+        1st: entire string ex: collected $2424.24
+        2nd: 2424.24
+    */
+    private collectedFromRegExp = /collected \$(\d+\.\d+|\d+)/
+
     private hands: string[];
     private _convertedHands: string[];
 
@@ -71,135 +86,130 @@ export class HandConverterService {
     }
 
     private convert(hand: string) {
+        let slicedHand = hand.split('\n')
+        this.setHandRegions(slicedHand)
         // to allow for chaining each fn must accept and return string
-        let pipeline: PipeLineFunction[] = [
+        let pipeline: PipelineFn[] = [
             this.replaceMetadata,
-            this.replaceSeatsAndBlindsData
+            this.replaceStacks,
+            this.replaceBlinds, 
+            this.replaceRaises,
+            this.replaceCallsAndBets,
         ] 
 
-        return pipeline.reduce((acc, fn) => fn(acc) , hand);
+        return pipeline.reduce((acc, fn) => fn(acc) , slicedHand).join('\n');
+    }
+
+    private setHandRegions(handArr: string[]): void {
+        let preflop = {
+            start: 2,
+            end: this.lastIndexOfString(handArr,  '*** HOLE CARDS ***')
+        }
+
+        let postflop = {
+            start: preflop.end,
+            end: this.lastIndexOfString(handArr,  '*** SUMMARY ***')
+        }
+
+        let summary = {
+            start: postflop.end,
+            end: handArr.length - 1
+        }
+
+        this.handRegions = {
+            preflop,
+            summary,
+            postflop
+        }
     }
 
     // Pipeline funcitons
 
-    private replaceMetadata(hand: string): string {
-        const handArr = hand.trim().split('\n');
-
-        return handArr.reduce((previousValue: any, currentValue: string, index, arr) => {
+    private replaceMetadata(handArr: string[]): string[] {
+        return handArr.reduce((previousValue, currentValue, index, arr) => {
             // replaces first line with new metadata
             if (index === 0) currentValue = this.createNewMetadata(currentValue);
             previousValue.push(currentValue);
-
-            // if last index join accumulator to return string
-            if (index === arr.length - 1) previousValue = previousValue.join('\n');
             return previousValue
         }, [])
          
     }
 
-    private replaceSeatsAndBlindsData(hand: string): string {
-        const handArr = hand.trim().split('\n');
+    private replaceStacks(handArr: string[]): string[] {
+        let region = this.handRegions.preflop;
+        return this.reduceHand(handArr, this.stacksRegExp, region.start, region.end);
 
-        const start = 2;
-        /*
-            TODO: make it hole cards agnostic (allow for datamined hands)
-        */
-        const end = handArr.findIndex(handString => handString.includes('*** HOLE CARDS ***'));
+    }
 
-        return handArr.reduce((previousValue: any, currentValue: string, index, arr) => {
+    private replaceBlinds(handArr: string[]): string[] {
+        let region = this.handRegions.preflop;
+        return this.reduceHand(handArr, this.blindsRegExp, region.start, region.end);
+    }
+
+    private replaceAntes(handArr: string[]): string[] {
+        // TODO
+        return handArr;
+    }
+
+    private replaceRaises(handArr: string[]): string[] {
+        let region = this.handRegions.postflop;
+        return this.reduceHand(handArr, this.raisesRegExp, region.start, region.end);
+    }
+
+    private replaceCallsAndBets(handArr: string[]): string[] {
+        let region = this.handRegions.postflop;
+        return this.reduceHand(handArr, this.callsOrBetsRegExp, region.start, region.end);
+    }
+
+    private replaceCollectedFromPot(handArr: string[]): string[] {
+        let region = this.handRegions.postflop;
+        return this.reduceHand(handArr, this.collectedFromRegExp, region.end - 2, region.end);
+    }
+
+    private replaceTotalPot(handArr: string[]): string[] {
+        let region = this.handRegions.summary;
+        // TODO
+        return handArr;
+    }
+
+    private replaceHandSummary(handArr:string[]): string[] {
+        let region = this.handRegions.summary;
+        // TODO
+        return handArr;
+    }
+
+    // Helper functions
+
+    lastIndexOfString(handArr: string[], stringToEndOn: string): number {
+        return handArr.findIndex(handString => handString.includes(stringToEndOn));
+    }   
+
+    reduceHand(hand: string[], regExp: RegExp, start: number, end: number): string[] {
+        return hand.reduce((previousValue: any[], currentValue: string, index, arr) => {
 
             if (index < end && index > start) {
-                currentValue = this.createNewStakesString(currentValue);
-                currentValue = this.createNewBlindsString(currentValue);
+                currentValue = this.transformString(currentValue, regExp);
             }
+            previousValue.push(currentValue);
 
-            if (index === arr.length - 1) previousValue = previousValue.join('\n');
             return previousValue
         }, []);
-        
     }
 
-    private replaceHandAction(hand: string): string {
-        const handArr = hand.trim().split('\n');
-
-        /*
-            TODO: make it hole cards agnostic (allow for datamined hands)
-        */
-        const start = handArr.findIndex(handString => handString.includes('*** HOLE CARDS ***'));
-        const end = handArr.findIndex(handString => handString.includes('*** SUMMARY ***'));
-
-        return handArr.reduce((previousValue: any, currentValue: string, index, arr) => {
-
-            if (index < end && index > start) {
-                currentValue = this.replaceRaisesFromTo(currentValue)
-
-            }
-
-            if (index === arr.length - 1) previousValue = previousValue.join('\n');
-            return previousValue
-        }, [])
-    }
-
-
-
-    // Helper functions   
-
-    private replaceCallsOrBets(originalString: string): string {
-        let matches = this.blindsRegExp.exec(originalString);
+    private transformString(originalString: string, regExp: RegExp): string {
+        let matches = regExp.exec(originalString);
         if (!matches) return originalString;
 
-        let [raiseAction, ...] = matches;
+        let [oldStringSlice, ...captureGroups] = matches;
+        captureGroups = captureGroups.filter(group => group);
 
+        let newStringSlice = captureGroups.reduce((acc, curr) => {
+            let newCurr = +curr / this.stakeModifier
+            return acc.replace(curr, newCurr);
+        }, oldStringSlice)
 
         return originalString.replace(oldStringSlice, newStringSlice);
     }
-
-    private replaceRaisesFromTo(originalString: string): string {
-        let matches = this.blindsRegExp.exec(originalString);
-        if (!matches) return originalString;
-
-        let [raiseAction, raiseFrom, raiseTo] = matches;
-        let newRaiseFrom = +raiseFrom / this.stakeModifier;
-        let newRaiseTo = +raiseTo / this.stakeModifier;
-
-        let newRaiseAction = raiseAction
-            .replace(raiseFrom, newRaiseFrom)
-            .replace(raiseFrom, newRaiseFrom);
-
-
-        return originalString.replace(raiseAction, newRaiseAction);
-    }
-
-
-    private createNewBlindsString(originalString: string): string {
-        let matches = this.blindsRegExp.exec(originalString);
-        if (!matches) return originalString;
-
-        /*
-         ...blinds will capture 3 capture group (post sb, posts bb or posts sb & bb)
-            out of which only one will return truthy value
-        */
-        let [blindString, ...blinds ] = matches;
-        let oldBlind = blinds.filter(blind => blind);
-        let newBlind = +oldBlind / this.stakeModifier
-
-        return blindString.replace(oldBlind, newBlind)
-    }
-
-    private createNewStakesString(originalString: string): string {
-        let matches = this.stacksRegExp.exec(originalString);
-        if (!matches) return originalString;
-
-        // old values
-        let [stackString, stackSize] = matches;
-
-        // new values
-        let newStackSize = +stackSize / this.stakeModifier;
-        let newStackString = stackString.replace(stackSize, newStackSize);
-        
-        return originalString.replace(stackString, newStackString)
-    }
-
 
     private createNewMetadata(originalString: string): string {
         let matches = this.stakesRegExp.exec(originalString)
