@@ -5,14 +5,17 @@ import 'rxjs/add/observable/merge'
 import 'rxjs/add/operator/distinctUntilChanged'
 import 'rxjs/add/operator/do'
 
+import { HandConverterService } from './hand-converter.service';
+
 @Component({
-    templateUrl: './single-file-reader.component.html'
+    templateUrl: './single-file-reader.component.html',
+    providers: [HandConverterService]
 })
 export class SingleFileReaderComponent implements OnInit {
 
     convertedHand: string = '';
 
-    constructor(private renderer: Renderer) {}
+    constructor(private renderer: Renderer, private hcs: HandConverterService) {}
 
     @ViewChild('paste') pasteArea: ElementRef;
     @ViewChild('result') resultArea: ElementRef;
@@ -55,8 +58,8 @@ export class SingleFileReaderComponent implements OnInit {
     }
 
     convertHand(hand: string): string {
-        // convert logic ...
-        return hand + hand;
+        this.hcs.setHand(hand);
+        return this.hcs.convertedHand;
     }
 
 

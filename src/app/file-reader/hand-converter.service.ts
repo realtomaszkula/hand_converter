@@ -66,20 +66,56 @@ export class HandConverterService {
     */
     private collectedFromRegExp = /collected \$(\d+\.\d+|\d+)/
 
-    private hands: string[];
+    /*
+        Capture groups:
+        1st: entire string ex: and won ($1220)
+        2nd: 1220
+    */
+    private summaryAndWonRegExp = /won \(\$(\d+\.\d+|\d+)\)/
+
+    /*
+        Capture groups:
+        1st: entire string ex: posts the ante $2
+        2nd: 2
+    */
+    private antesRegExp = /posts the ante \$(\d+\.\d+|\d+)/
+
+    /*
+        Capture groups:
+        1st: entire string ex: Main pot $1205.40
+        2nd: 1205.40
+    */
+    private mainPotRegExp = /Main pot \$(\d+\.\d+|\d+)/
+
+    /*
+        Capture groups:
+        1st: entire string ex: Main pot $1205.40
+        2nd: 1205.40
+    */
+    private sidePotRegExp = /Side pot \$(\d+\.\d+|\d+)/
+
     private _convertedHands: string[];
+
+    private _convertedHand: string;
 
     get convertedHands() {
         return this._convertedHands;
     }
 
+    get convertedHand() {
+        return this._convertedHand;
+    }
+
     setHands(hands: string[]) {
-        this.hands = hands;
         this._convertedHands = this.convertHands(hands)
     }
 
+    setHand(hand: string) {
+        this._convertedHand = this.convert(hand)
+    }
+
     private convertHands(hands: string[]): string[] {
-        return this.hands.reduce((acc: string[], hand: string) => {
+        return hands.reduce((acc: string[], hand: string) => {
             acc.push(this.convert(hand))
             return acc
         }, [])
@@ -93,8 +129,14 @@ export class HandConverterService {
             this.replaceMetadata,
             this.replaceStacks,
             this.replaceBlinds, 
+            this.replaceAntes,
             this.replaceRaises,
             this.replaceCallsAndBets,
+            this.replaceCollectedFromPot,
+            // this.replaceSummarySidePot,
+            // this.replaceSummaryMainPot,
+            // // this.replaceSummaryTotalPot,
+            // this.replaceSummarySeatPot
         ] 
 
         return pipeline.reduce((acc, fn) => fn(acc) , slicedHand).join('\n');
@@ -125,7 +167,7 @@ export class HandConverterService {
 
     // Pipeline funcitons
 
-    private replaceMetadata(handArr: string[]): string[] {
+    public replaceMetadata = (handArr: string[]): string[] => {
         return handArr.reduce((previousValue, currentValue, index, arr) => {
             // replaces first line with new metadata
             if (index === 0) currentValue = this.createNewMetadata(currentValue);
@@ -135,60 +177,75 @@ export class HandConverterService {
          
     }
 
-    private replaceStacks(handArr: string[]): string[] {
+    public replaceStacks = (handArr: string[]): string[] => {
         let region = this.handRegions.preflop;
         return this.reduceHand(handArr, this.stacksRegExp, region.start, region.end);
 
     }
 
-    private replaceBlinds(handArr: string[]): string[] {
+    public replaceBlinds = (handArr: string[]): string[] => {
         let region = this.handRegions.preflop;
         return this.reduceHand(handArr, this.blindsRegExp, region.start, region.end);
     }
 
-    private replaceAntes(handArr: string[]): string[] {
-        // TODO
-        return handArr;
+    public replaceAntes = (handArr: string[]): string[] => {
+        let region = this.handRegions.preflop;
+        return this.reduceHand(handArr, this.antesRegExp, region.start, region.end);
     }
 
-    private replaceRaises(handArr: string[]): string[] {
+    public replaceRaises = (handArr: string[]): string[] => {
         let region = this.handRegions.postflop;
         return this.reduceHand(handArr, this.raisesRegExp, region.start, region.end);
     }
 
-    private replaceCallsAndBets(handArr: string[]): string[] {
+    public replaceCallsAndBets = (handArr: string[]): string[] => {
         let region = this.handRegions.postflop;
         return this.reduceHand(handArr, this.callsOrBetsRegExp, region.start, region.end);
     }
 
-    private replaceCollectedFromPot(handArr: string[]): string[] {
+    public replaceCollectedFromPot = (handArr: string[]): string[] => {
         let region = this.handRegions.postflop;
-        return this.reduceHand(handArr, this.collectedFromRegExp, region.end - 2, region.end);
+        return this.reduceHand(handArr, this.collectedFromRegExp, region.start, region.end);
     }
 
-    private replaceTotalPot(handArr: string[]): string[] {
+    public replaceSummaryMainPot = (handArr:string[]): string[] => {
         let region = this.handRegions.summary;
-        // TODO
-        return handArr;
+        return this.reduceHand(handArr, this.mainPotRegExp, region.start, region.end);
     }
 
-    private replaceHandSummary(handArr:string[]): string[] {
+    public replaceSummarySidePot = (handArr:string[]): string[] => {
         let region = this.handRegions.summary;
-        // TODO
-        return handArr;
+        return this.reduceHand(handArr, this.sidePotRegExp, region.start, region.end);
     }
+
+
+    public replaceSummaryTotalPot = (handArr:string[]): string[] => {
+        let region = this.handRegions.summary;
+        return this.reduceHand(handArr, /asdasdasdasd/, region.start, region.end);
+    }
+
+     public replaceSummarySeatPot = (handArr: string[]): string[] => {
+        let region = this.handRegions.summary;
+        return this.reduceHand(handArr, this.summaryAndWonRegExp, region.start, region.end);
+    }
+
+
 
     // Helper functions
 
-    lastIndexOfString(handArr: string[], stringToEndOn: string): number {
+    public lastIndexOfString = (handArr: string[], stringToEndOn: string): number => {
         return handArr.findIndex(handString => handString.includes(stringToEndOn));
     }   
 
-    reduceHand(hand: string[], regExp: RegExp, start: number, end: number): string[] {
+    public reduceHand = (hand: string[], regExp: RegExp, start: number, end: number, customFn?: Function): string[] => {
         return hand.reduce((previousValue: any[], currentValue: string, index, arr) => {
 
-            if (index < end && index > start) {
-                currentValue = this.transformString(currentValue, regExp);
+            if (index <= end && index >= start) {
+                if (customFn) {
+                    customFn();
+                } else {
+                    currentValue = this.transformString(currentValue, regExp);
+                }
             }
             previousValue.push(currentValue);
 
@@ -196,7 +253,7 @@ export class HandConverterService {
         }, []);
     }
 
-    private transformString(originalString: string, regExp: RegExp): string {
+    public transformString = (originalString: string, regExp: RegExp): string => {
         let matches = regExp.exec(originalString);
         if (!matches) return originalString;
 
@@ -204,14 +261,14 @@ export class HandConverterService {
         captureGroups = captureGroups.filter(group => group);
 
         let newStringSlice = captureGroups.reduce((acc, curr) => {
-            let newCurr = +curr / this.stakeModifier
+            let newCurr = (+curr / this.stakeModifier).toFixed(2);
             return acc.replace(curr as any, newCurr as any);
         }, oldStringSlice)
 
         return originalString.replace(oldStringSlice, newStringSlice);
     }
 
-    private createNewMetadata(originalString: string): string {
+    public createNewMetadata = (originalString: string): string => {
         let matches = this.stakesRegExp.exec(originalString)
         if (!matches) return originalString;
 
