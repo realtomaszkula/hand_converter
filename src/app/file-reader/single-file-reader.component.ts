@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 
 @Component({
-    template: `single file`
+    templateUrl: './single-file-reader.component.html'
 })
 export class SingleFileReaderComponent {}

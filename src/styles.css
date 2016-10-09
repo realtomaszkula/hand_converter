@@ -1,1 +1,17 @@
 /* You can add global styles to this file, and also import other style files */
+
+.spacer-xs {
+    margin-top: 20px;
+}
+
+.spacer-sm {
+    margin-top: 40px;
+}
+
+.spacer-md {
+    margin-top: 60px;
+}
+
+.spacer-bg {
+    margin-top: 80px;
+}
