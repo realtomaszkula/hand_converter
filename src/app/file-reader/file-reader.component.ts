@@ -9,11 +9,10 @@ import { HandConverterService } from './hand-converter.service';
 
 @Component({
         template: `
-    <input id="files" type="file" multiple 
-         #input (change)="onChange(input.files)"/>
-
-        <progress max="100" [value]="progressCounter"> </progress>
         <drag-and-drop></drag-and-drop>
+        <progress-component [value]="progressCounter"></progress-component>
+        <input id="files" type="file" multiple 
+         #input (change)="onChange(input.files)"/>
     `,
     styles: [ `
         .log { 
