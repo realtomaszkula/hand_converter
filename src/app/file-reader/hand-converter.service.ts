@@ -24,8 +24,9 @@ export class HandConverterService {
         2nd: small blind ex: 50
         3rd: big blind ex: 100
     */
+    // private stakesRegExp = /\(\$(\d+|\d+\.\d+)\/\$(\d+|\d+\.\d+)(?:\sUSD\)|\))/;
     private stakesRegExp = /\(\$(\d+)\/\$(\d+)(?:\sUSD\)|\))/;
-
+    
     /*
         Capture groups:
         1st: entire string ex: ($783.50 in chips) 
@@ -42,7 +43,7 @@ export class HandConverterService {
 
         only one capture group of 2..4 will return truthy value
     */
-    private blindsRegExp = /posts small blind \$(\d+)|posts big blind \$(\d+)|posts big & small blind \$(\d+)/;
+    private blindsRegExp = /posts small blind \$(\d+)|posts big blind \$(\d+)|posts big & small blind \$(\d+)|posts small & big blinds \$(\d+\.\d+|\d+)/;
 
     /*
         Capture groups:
@@ -141,10 +142,10 @@ export class HandConverterService {
             this.replaceCallsAndBets,
             this.replaceUncalledBets,
             this.replaceCollectedFromPot,
-            // this.replaceSummarySidePot,
-            // this.replaceSummaryMainPot,
+            this.replaceSummarySidePot,
+            this.replaceSummaryMainPot,
             // // this.replaceSummaryTotalPot,
-            // this.replaceSummarySeatPot
+            this.replaceSummarySeatPot
         ] 
 
         return pipeline.reduce((acc, fn) => fn(acc) , slicedHand).join('\n');
@@ -274,7 +275,8 @@ export class HandConverterService {
         captureGroups = captureGroups.filter(group => group);
 
         let newStringSlice = captureGroups.reduce((acc, curr) => {
-            let newCurr = (+curr / this.stakeModifier).toFixed(2);
+            let newCurr = (+curr / this.stakeModifier).toFixed(2)
+
             return acc.replace(curr as any, newCurr as any);
         }, oldStringSlice)
 
@@ -289,6 +291,9 @@ export class HandConverterService {
 
         // will be used in the all pipe-transforming functions to scale the hand
         this.stakeModifier = +bb;
+
+        console.log(this.stakeModifier)
+        if (this.stakeModifier < 1) throw new Error('converter works only for stakes > 100')
 
         let newStakesString = stakesString
             .replace(sb, '0.5')
