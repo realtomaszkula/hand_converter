@@ -36,6 +36,21 @@ export class HandConverterService {
     */
     private blindsRegExp = /posts small blind \$(\d+)|posts big blind \$(\d+)|posts big & small blind \$(\d+)/;
 
+    /*
+        Capture groups:
+        1st: entire string ex: raises $719 to $982.25
+        2nd: raises from: 719
+        3rd: raises to: 982.25
+    */
+    private raisesRegExp = /raises \$(\d+|\d+\.\d+) to \$(\d+\.\d+|\d+)/
+
+    /*
+        Capture groups:
+        1st: entire string ex: bets $80.42
+        2nd: raises from: 80.42
+    */
+    private callsOrBetsRegExp = /bets \$(\d+\.\d+|\d+|)|calls \$(\d+\.\d+|\d+)/
+
     private hands: string[];
     private _convertedHands: string[];
 
@@ -59,11 +74,13 @@ export class HandConverterService {
         // to allow for chaining each fn must accept and return string
         let pipeline: PipeLineFunction[] = [
             this.replaceMetadata,
-            // ... might add more in the future
+            this.replaceSeatsAndBlindsData
         ] 
 
         return pipeline.reduce((acc, fn) => fn(acc) , hand);
     }
+
+    // Pipeline funcitons
 
     private replaceMetadata(hand: string): string {
         const handArr = hand.trim().split('\n');
@@ -84,7 +101,10 @@ export class HandConverterService {
         const handArr = hand.trim().split('\n');
 
         const start = 2;
-        const end = handArr.indexOf('*** HOLE CARDS ***');
+        /*
+            TODO: make it hole cards agnostic (allow for datamined hands)
+        */
+        const end = handArr.findIndex(handString => handString.includes('*** HOLE CARDS ***'));
 
         return handArr.reduce((previousValue: any, currentValue: string, index, arr) => {
 
@@ -97,7 +117,59 @@ export class HandConverterService {
             return previousValue
         }, []);
         
-    }   
+    }
+
+    private replaceHandAction(hand: string): string {
+        const handArr = hand.trim().split('\n');
+
+        /*
+            TODO: make it hole cards agnostic (allow for datamined hands)
+        */
+        const start = handArr.findIndex(handString => handString.includes('*** HOLE CARDS ***'));
+        const end = handArr.findIndex(handString => handString.includes('*** SUMMARY ***'));
+
+        return handArr.reduce((previousValue: any, currentValue: string, index, arr) => {
+
+            if (index < end && index > start) {
+                currentValue = this.replaceRaisesFromTo(currentValue)
+
+            }
+
+            if (index === arr.length - 1) previousValue = previousValue.join('\n');
+            return previousValue
+        }, [])
+    }
+
+
+
+    // Helper functions   
+
+    private replaceCallsOrBets(originalString: string): string {
+        let matches = this.blindsRegExp.exec(originalString);
+        if (!matches) return originalString;
+
+        let [raiseAction, ...] = matches;
+
+
+        return originalString.replace(oldStringSlice, newStringSlice);
+    }
+
+    private replaceRaisesFromTo(originalString: string): string {
+        let matches = this.blindsRegExp.exec(originalString);
+        if (!matches) return originalString;
+
+        let [raiseAction, raiseFrom, raiseTo] = matches;
+        let newRaiseFrom = +raiseFrom / this.stakeModifier;
+        let newRaiseTo = +raiseTo / this.stakeModifier;
+
+        let newRaiseAction = raiseAction
+            .replace(raiseFrom, newRaiseFrom)
+            .replace(raiseFrom, newRaiseFrom);
+
+
+        return originalString.replace(raiseAction, newRaiseAction);
+    }
+
 
     private createNewBlindsString(originalString: string): string {
         let matches = this.blindsRegExp.exec(originalString);
