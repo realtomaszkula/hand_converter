@@ -10,6 +10,8 @@ import 'rxjs/add/operator/debounceTime'
 import 'rxjs/add/operator/do'
 import 'rxjs/add/operator/retry'
 import 'rxjs/add/operator/filter'
+import 'rxjs/add/operator/share'
+import 'rxjs/add/operator/delay'
 
 import { HandConverterService, HandConverter } from './hand-converter.service';
 
@@ -19,8 +21,8 @@ import { HandConverterService, HandConverter } from './hand-converter.service';
 })
 export class SingleFileReaderComponent implements OnInit, OnDestroy {
 
-    convertedHand: string = '';
-    error: string = '';
+    convertedHand: string = null;
+    error: string = null;
 
     constructor(
         private renderer: Renderer, 
@@ -32,7 +34,7 @@ export class SingleFileReaderComponent implements OnInit, OnDestroy {
     @ViewChild('result') resultArea: ElementRef;
 
     private pasteSubscription: Subscription;
-    private keyupSubscription: Subscription;
+    private mergedSubscription: Subscription;
 
     ngOnInit() {
         let pasteEl = this.pasteArea.nativeElement;
@@ -41,53 +43,60 @@ export class SingleFileReaderComponent implements OnInit, OnDestroy {
         // streams
         const paste$ =  Observable.fromEvent(pasteEl, 'paste')
             .map((e: ClipboardEvent) => e.clipboardData.getData('text/plain'))
+            .share()
 
         const keyup$ = Observable.fromEvent(pasteEl, 'keyup')
             .map((e: KeyboardEvent) => e.target['value'])
 
-        Observable.merge(keyup$, paste$)
-            .filter(value => value)
-            .debounceTime(100)
-            .distinctUntilChanged()
-            .subscribe(hand => {
-                this.hcs.setHand(hand)
+        // component subscriptions
+        this.mergedSubscription = 
+            Observable.merge(keyup$, paste$)
+                .distinctUntilChanged()
+                .filter(value => {
+                    if (!value) {
+                        // if the value is empty disable result area, do not pass to subscribe
+                        this.convertedHand = '';
+                        this.cd.detectChanges();
+                    }
+                    return value
+                })
+                .subscribe(hand => {
+                    this.hcs.setHand(hand)
+                })
+
+        this.pasteSubscription = 
+            paste$.subscribe(result => {
+                if (!this.error) {
+                    // focus result area
+                    this.updateView(() => {
+                        this.renderer.invokeElementMethod(resultEl, 'focus')
+                    })
+
+                    // select entire output
+                    this.updateView(() => {
+                        this.renderer.invokeElementMethod(resultEl, 
+                            'setSelectionRange', [0, resultEl.value.length])
+                    })
+                }
             })
 
-
-        // subscriptions
-        // paste$
-        //     .subscribe(result => {
-        //         // focus result area
-        //         this.updateView(() => {
-        //             this.renderer.invokeElementMethod(resultEl, 'focus')
-        //         })
-
-        //         // select entire output
-        //         this.updateView(() => {
-        //             this.renderer.invokeElementMethod(resultEl, 
-        //                 'setSelectionRange', [0, resultEl.value.length])
-        //         })
-        //     })
-
-
         // service subscriptions
-        this.hcs.convertHand$
-            .subscribe((convertedHand: string) => {
-            this.error = '';
+        this.hcs.convertHand$.subscribe((convertedHand: string) => {
+            this.error = null;
             this.convertedHand = convertedHand;
             this.cd.detectChanges();
         })
 
         this.hcs.errors$.subscribe(error => {
             this.error = error;
-            this.convertedHand = ''
+            this.convertedHand = null;
             this.cd.detectChanges();
         })
     }
 
 
     ngOnDestroy() {
-        this.keyupSubscription.unsubscribe();
+        this.mergedSubscription.unsubscribe();
         this.pasteSubscription.unsubscribe();
     }
 

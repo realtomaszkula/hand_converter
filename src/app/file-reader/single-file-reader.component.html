@@ -26,7 +26,7 @@
     </div>
     <div class="panel-body">
         <textarea #result 
-            [disabled]="error" 
+            [disabled]="!result.value || error" 
             [value]="convertedHand"
             cols="30" rows="30" class="form-control"></textarea>
     </div>
