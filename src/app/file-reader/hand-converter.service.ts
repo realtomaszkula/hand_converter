@@ -272,9 +272,8 @@ export class HandConverterService implements HandConverter {
         let rake = +rakeValue;
         let potWithoutRake = pot - rake;
 
-        // calculate new pot and adjust rake to represent more believable rake at lower pots
+        // calculate new pot
         let convertedPot = pot / this.stakeModifier;
-        if (convertedPot < 60) rake = 1;
 
         // create new rake and pot string
         let newPot = this.convertToFloat(convertedPot + rake);
