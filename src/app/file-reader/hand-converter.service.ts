@@ -351,7 +351,7 @@ export class HandConverterService implements HandConverter {
         // will be used in the all pipe-transforming functions to scale the hand
         this.stakeModifier = +bb;
 
-        if (this.stakeModifier < 1) throw new Error('Converter works only for stakes > 100')
+        if (this.stakeModifier < 1) throw new Error('Converter only works for stakes > 100')
 
         let newStakesString = stakesString
             .replace(sb, '0.5')

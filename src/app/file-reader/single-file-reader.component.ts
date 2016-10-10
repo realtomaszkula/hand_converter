@@ -9,6 +9,7 @@ import 'rxjs/add/operator/distinctUntilChanged'
 import 'rxjs/add/operator/debounceTime'
 import 'rxjs/add/operator/do'
 import 'rxjs/add/operator/retry'
+import 'rxjs/add/operator/filter'
 
 import { HandConverterService, HandConverter } from './hand-converter.service';
 
@@ -45,6 +46,7 @@ export class SingleFileReaderComponent implements OnInit, OnDestroy {
             .map((e: KeyboardEvent) => e.target['value'])
 
         Observable.merge(keyup$, paste$)
+            .filter(value => value)
             .debounceTime(100)
             .distinctUntilChanged()
             .subscribe(hand => {
