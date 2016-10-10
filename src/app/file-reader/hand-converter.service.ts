@@ -354,7 +354,7 @@ export class HandConverterService implements HandConverter {
         if (this.stakeModifier < 1) throw new Error('Converter only works for stakes > 100')
 
         let newStakesString = stakesString
-            .replace(sb, '0.5')
+            .replace(sb, '0.50')
             .replace(bb, '1')
 
         return originalString.replace(stakesString, newStakesString);
