@@ -7,15 +7,21 @@ interface HandRegions {
     postflop: { start: number, end: number},
     summary: { start: number, end: number}
 }
+
 interface PipelineFn {
     (source: string[]): string[];
 }
 
-@Injectable()
-export class HandConverterService {
+export abstract class HandConverter {
+    abstract convertHand$: Observable<string>;
+    abstract errors$: Observable<string>;
+    setHand: (hand: string) => void;
+}
 
-    private stakeModifier: number;
-    private handRegions: HandRegions;
+
+
+@Injectable()
+export class HandConverterService implements HandConverter {
 
     /* 
         Capture groups: 
@@ -114,24 +120,27 @@ export class HandConverterService {
     */
     private rakeRegExp = /Rake \$(\d+\.\d+|\d+)$/
 
-    private _convertedHands: string[];
 
-    private _convertedHand: string;
+    private convertHandSource = new Subject<string>();
+    convertHand$ = this.convertHandSource.asObservable()
 
-    get convertedHands() {
-        return this._convertedHands;
-    }
+    private errorsSource = new Subject<string>();
+    errors$ = this.errorsSource.asObservable()
 
-    get convertedHand() {
-        return this._convertedHand;
-    }
+    private stakeModifier: number;
+    private handRegions: HandRegions;
+
 
     setHands(hands: string[]) {
-        this._convertedHands = this.convertHands(hands)
+        // ...
     }
 
     setHand(hand: string) {
-        this._convertedHand = this.convert(hand)
+        try {
+            this.convertHandSource.next(this.convert(hand));
+        } catch (e) {
+            this.errorsSource.next(e);
+        }
     }
 
     private convertHands(hands: string[]): string[] {
@@ -335,15 +344,14 @@ export class HandConverterService {
 
     public createNewMetadata = (originalString: string): string => {
         let matches = this.stakesRegExp.exec(originalString)
-        if (!matches) console.error('Cannot read the stakes');
+        if (!matches) throw new Error('Cannot read the stakes')
 
         let [stakesString, sb, bb] = matches;
 
         // will be used in the all pipe-transforming functions to scale the hand
         this.stakeModifier = +bb;
 
-        console.log(this.stakeModifier)
-        if (this.stakeModifier < 1) throw new Error('converter works only for stakes > 100')
+        if (this.stakeModifier < 1) throw new Error('Converter works only for stakes > 100')
 
         let newStakesString = stakesString
             .replace(sb, '0.5')
