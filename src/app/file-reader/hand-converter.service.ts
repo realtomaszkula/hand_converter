@@ -30,7 +30,14 @@ export class HandConverterService implements HandConverter {
         3rd: big blind ex: 100
     */
     private stakesRegExp = /\(\$(\d+\.\d+|\d+|)\/\$(\d+\.\d+|\d+|)/;
+
+    /*
+        Capture groups: 
+        1st: entire table string ex: Table 'Sycorax III'
+        2nd: table name ex: Sycorax III
+    */
     
+    private tableNameRegExp = /Table \'(.+?)\'/;
     /*
         Capture groups:
         1st: entire string ex: ($783.50 in chips) 
@@ -157,6 +164,7 @@ export class HandConverterService implements HandConverter {
         // to allow for chaining each fn must accept and return string[]
         let pipeline: PipelineFn[] = [
             this.replaceMetadata,
+            this.replaceTableName,
             this.replaceStacks,
             this.replaceBlinds, 
             this.replaceAntes,
@@ -211,6 +219,31 @@ export class HandConverterService implements HandConverter {
             return previousValue
         }, [])
          
+    }
+
+    public replaceTableName = (handArr: string[]): string[] => {
+        // table string is always second
+        const originalString = handArr[1];
+
+        let matches = this.tableNameRegExp.exec(originalString);
+        if (!matches) {
+            console.warn('Could not find table name');
+            return handArr;
+        }
+
+        let [tableString, tableName] = matches;
+
+        // picking new random name from preset list
+        let possibleNames = ['Gotha']; // can add more in the future
+        let newName = possibleNames[Math.floor(Math.random()*possibleNames.length)];
+
+        // creating new table string
+        let newTableString = tableString.replace(tableName, newName);
+
+        // updating original array
+        handArr[1] = originalString.replace(tableString, newTableString);
+
+        return handArr;
     }
 
     public replaceStacks = (handArr: string[]): string[] => {
