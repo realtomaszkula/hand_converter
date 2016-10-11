@@ -6,6 +6,7 @@ import 'rxjs/add/observable/fromEvent';
 import 'rxjs/add/operator/map';
 import 'rxjs/add/operator/count';
 import 'rxjs/add/operator/do';
+import 'rxjs/add/operator/delay';
 
 import { FileCoverterService } from './file-converter.service';
 import { HandConverterService, HandConverter } from './hand-converter.service';
@@ -44,7 +45,6 @@ export class MultiFileReaderComponent implements OnInit {
 
         this.fileConverter.convertedFiles$
             .count(x => true)
-            .do(x => console.log(`count: ${x}`))
             .subscribe(
                 (count) => {
                     this.progressCounter = count / this.uploadedHandsCount * 100
