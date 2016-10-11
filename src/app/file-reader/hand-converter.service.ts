@@ -12,13 +12,15 @@ interface PipelineFn {
     (source: string[]): string[];
 }
 
-export abstract class HandConverter {
-    abstract convertHand$: Observable<string>;
-    abstract errors$: Observable<string>;
-    setHand: (hand: string) => void;
+export interface ConversionResults {
+    converted: boolean;
+    error?: string;
+    convertedHand?: string
 }
 
-
+export abstract class HandConverter {
+    convertHand: (hand: string) => ConversionResults;
+}
 
 @Injectable()
 export class HandConverterService implements HandConverter {
@@ -126,36 +128,23 @@ export class HandConverterService implements HandConverter {
         2nd: 2.75
     */
     private rakeRegExp = /Rake \$(\d+\.\d+|\d+)$/
-
-
-    private convertHandSource = new Subject<string>();
-    convertHand$ = this.convertHandSource.asObservable()
-
-    private errorsSource = new Subject<string>();
-    errors$ = this.errorsSource.asObservable()
-
     private stakeModifier: number;
     private handRegions: HandRegions;
 
+    convertHand(hand: string): ConversionResults {
+        let result = {} as ConversionResults;
 
-    setHands(hands: string[]) {
-        // ...
-    }
-
-    getResult(hand: string): string {
         try {
-            return this.convert(hand);
-        } catch (e) {
-            console.warn('Could not convert the hand')
-            return hand
+            result.convertedHand = this.convert(hand);
+        } 
+        
+        catch (e) { 
+            result.error = e;
         }
-    }
 
-    setHand(hand: string) {
-        try {
-            this.convertHandSource.next(this.convert(hand));
-        } catch (e) {
-            this.errorsSource.next(e);
+        finally {
+            result.converted = result.error ? false : true;
+             return result;
         }
     }
 

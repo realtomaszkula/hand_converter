@@ -64,15 +64,20 @@ export class FileCoverterService  {
   }
 
   private convertAll() {
-      this.result = this.handFileStrings.reduce((acc, curr) => {
+      console.log('started');
+        console.time('aaa')
+            this.result = this.handFileStrings.reduce((acc, curr) => {
 
-          let hands = curr.split('\n\n').filter(line => line.match(/\s/));
-          let convertedHands = hands.map(hand => this.hcs.getResult(hand))
+                let hands = curr.split('\n\n').filter(line => line.match(/\s/));
+                let convertedHands = hands.map(hand => this.hcs.getResult(hand))
 
-          return [...acc, ...convertedHands];
-      }, [])
-      console.log(this.result);
+                return [...acc, ...convertedHands];
+            }, [])
+        console.timeEnd('aaa');
+      console.log(this.result.length);
   }
+
+  private
 
 
 

@@ -14,7 +14,7 @@ import 'rxjs/add/operator/filter'
 import 'rxjs/add/operator/share'
 import 'rxjs/add/operator/delay'
 
-import { HandConverterService, HandConverter } from './hand-converter.service';
+import { HandConverterService, HandConverter, ConversionResults } from './hand-converter.service';
 
 @Component({
     templateUrl: './single-file-reader.component.html',
@@ -73,8 +73,17 @@ export class SingleFileReaderComponent implements OnInit, OnDestroy {
                     return value
                 })
                 .subscribe(hand => {
-                    this.hcs.setHand(hand)
-                })
+                    let result: ConversionResults =  this.hcs.convertHand(hand)
+                    if (result.converted) {
+                         this.convertedHand = result.convertedHand;
+                         this.error = null;
+                    } else {
+                        this.convertedHand = null;
+                         this.error = result.error;
+                    }
+                    this.cd.detectChanges();
+
+                }) 
 
         this.pasteSubscription = 
             paste$.subscribe(result => {
@@ -95,20 +104,6 @@ export class SingleFileReaderComponent implements OnInit, OnDestroy {
                 }       
 
             })
-
-        // service subscriptions
-        this.hcs.convertHand$.subscribe((convertedHand: string) => {
-            this.error = null;
-            this.convertedHand = convertedHand;
-            this.cd.detectChanges();
-
-        })
-
-        this.hcs.errors$.subscribe(error => {
-            this.error = error;
-            this.convertedHand = null;
-            this.cd.detectChanges();
-        })
     }
 
     fadeInAndOutAnimation() {
