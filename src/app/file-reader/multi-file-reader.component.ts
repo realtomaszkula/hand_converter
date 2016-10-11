@@ -4,6 +4,7 @@ import { Observable } from 'rxjs/Observable';
 
 import 'rxjs/add/observable/fromEvent';
 import 'rxjs/add/operator/map';
+import 'rxjs/add/operator/scan';
 
 import { FileCoverterService } from './file-converter.service';
 import { HandConverterService, HandConverter } from './hand-converter.service';
@@ -33,5 +34,10 @@ export class MultiFileReaderComponent implements OnInit {
         const input$ = Observable.fromEvent(input, 'change')
             .map((e: Event) => e.target['files'])
             .subscribe((filelist: FileList) => this.fileConverter.extract(filelist));
+        
+        this.fileConverter.convertedFiles$
+                .map( x => 1 )
+                .scan((acc, value) => acc + value, 0)
+                .subscribe(x => console.log(`converted ${x} files`))
     }
 }
