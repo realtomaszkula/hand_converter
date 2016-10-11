@@ -11,6 +11,5 @@ addEventListener('message', function (e) {
             }
         }, undefined);
     };
-    console.log(message.file);
     reader.readAsText(message.file);
 });

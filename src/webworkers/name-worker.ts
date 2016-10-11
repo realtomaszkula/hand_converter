@@ -24,7 +24,6 @@ addEventListener('message', (e) => {
             }
         } as Response, undefined);
     }
-        console.log(message.file)
     reader.readAsText(message.file);
 
 });

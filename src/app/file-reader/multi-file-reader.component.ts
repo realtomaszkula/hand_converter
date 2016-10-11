@@ -4,7 +4,8 @@ import { Observable } from 'rxjs/Observable';
 
 import 'rxjs/add/observable/fromEvent';
 import 'rxjs/add/operator/map';
-import 'rxjs/add/operator/scan';
+import 'rxjs/add/operator/count';
+import 'rxjs/add/operator/do';
 
 import { FileCoverterService } from './file-converter.service';
 import { HandConverterService, HandConverter } from './hand-converter.service';
@@ -21,6 +22,8 @@ export class MultiFileReaderComponent implements OnInit {
     @ViewChild('handsInput') inputRef: ElementRef;
 
     progressCounter = 0;
+    uploadedHandsCount = 0;
+    uploadFinished = false;
 
     constructor(
         private handConverter: HandConverter,
@@ -33,6 +36,22 @@ export class MultiFileReaderComponent implements OnInit {
 
         const input$ = Observable.fromEvent(input, 'change')
             .map((e: Event) => e.target['files'])
-            .subscribe((filelist: FileList) => this.fileConverter.extract(filelist));
+            .subscribe((filelist: FileList) => {
+                this.uploadedHandsCount = filelist.length;
+                this.fileConverter.extract(filelist)
+            });
+
+
+        this.fileConverter.convertedFiles$
+            .count(x => true)
+            .do(x => console.log(`count: ${x}`))
+            .subscribe(
+                (count) => {
+                    this.progressCounter = count / this.uploadedHandsCount * 100
+                    this.cd.detectChanges();
+                },
+                (error) => console.error(error),
+                () => this.uploadFinished = true
+            )
     }
 }

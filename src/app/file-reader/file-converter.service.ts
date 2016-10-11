@@ -5,6 +5,7 @@ import { HandConverterService, HandConverter } from './hand-converter.service';
 
 import 'rxjs/add/operator/map';
 import 'rxjs/add/operator/count';
+import 'rxjs/add/operator/share';
 
 interface Message {
     isLast: boolean;
@@ -33,7 +34,6 @@ interface ConvertAllResult {
 @Injectable()
 export class FileCoverterService  {
 
-
   private handObjects: HandObject[] = []
   private result: ConvertAllResult
 
@@ -50,6 +50,7 @@ export class FileCoverterService  {
                 if (response.finished) obs.complete();
           }             
       })
+      .share()
   }
 
   extract(files: FileList) {
@@ -73,6 +74,7 @@ export class FileCoverterService  {
       } 
   }
 
+  // this will move to ww in the future
   private convertAll() {
     this.result = this.handObjects.reduce((acc, curr) => {
         let fileName = curr.fileName;
@@ -95,7 +97,6 @@ export class FileCoverterService  {
         } 
     }, { convertedHands: [], errors: [] } )
 
-    console.log(this.result);
         
   }
 
