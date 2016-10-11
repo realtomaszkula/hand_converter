@@ -1,8 +1,11 @@
 addEventListener('message', function (e) {
-    var file = e.data;
+    var message = e.data;
     var reader = new FileReader();
     reader.onload = function (e) {
-        postMessage(e.target['result'], undefined);
+        postMessage({
+            finished: message.isLast,
+            hand: e.target['result']
+        }, undefined);
     };
-    reader.readAsText(file);
+    reader.readAsText(message.file);
 });

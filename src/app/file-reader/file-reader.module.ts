@@ -5,11 +5,11 @@ import { SingleFileReaderComponent } from './single-file-reader.component';
 import { MultiFileReaderComponent } from './multi-file-reader.component';
 import { DragAndDropComponent } from './drag-and-drop.component';
 import { ProgressComponent } from './progress.component';
-
+import { HandConverterService } from './hand-converter.service';
 
 @NgModule({
     declarations: [ MultiFileReaderComponent, DragAndDropComponent, ProgressComponent, SingleFileReaderComponent ],
-    providers: [ ],
+    providers: [ HandConverterService ],
     imports: [ SharedModule ],
     exports: [ MultiFileReaderComponent ]
 })

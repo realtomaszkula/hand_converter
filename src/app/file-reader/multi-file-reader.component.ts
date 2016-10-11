@@ -34,10 +34,5 @@ export class MultiFileReaderComponent implements OnInit {
         const input$ = Observable.fromEvent(input, 'change')
             .map((e: Event) => e.target['files'])
             .subscribe((filelist: FileList) => this.fileConverter.extract(filelist));
-        
-        this.fileConverter.convertedFiles$
-                .map( x => 1 )
-                .scan((acc, value) => acc + value, 0)
-                .subscribe(x => console.log(`converted ${x} files`))
     }
 }

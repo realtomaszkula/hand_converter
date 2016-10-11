@@ -142,6 +142,15 @@ export class HandConverterService implements HandConverter {
         // ...
     }
 
+    getResult(hand: string): string {
+        try {
+            return this.convert(hand);
+        } catch (e) {
+            console.warn('Could not convert the hand')
+            return hand
+        }
+    }
+
     setHand(hand: string) {
         try {
             this.convertHandSource.next(this.convert(hand));

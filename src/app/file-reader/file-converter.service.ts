@@ -1,36 +1,81 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs/Observable';
 
+import { HandConverterService, HandConverter } from './hand-converter.service';
+
 import 'rxjs/add/operator/map';
+import 'rxjs/add/operator/count';
+
+interface Message {
+    isLast: boolean;
+    file: File;
+}
+
+interface PipelineFn {
+    (handsArray: string[]): string[]
+}
+
+interface Response {
+    finished: boolean;
+    hand: string;
+}
 
 @Injectable()
-export class FileCoverterService {
-  
-  convertedFiles$: Observable<string>
-  private worker: Worker;
+export class FileCoverterService  {
 
-  constructor() {
-      this.worker = new Worker('webworkers/name-worker.js');
-      this.convertedFiles$ = Observable.create(obs => {
-          this.worker.onmessage = function(e) {
-            obs.next(e)
+
+  private handFileStrings: string[] = [];
+  private result: string[] = [];
+
+  convertedFiles$: Observable<string>
+  private extractWorker: Worker;
+
+
+  constructor(private hcs: HandConverterService) {
+        this.extractWorker = new Worker('webworkers/name-worker.js');
+        this.convertedFiles$ = Observable.create(obs => {
+            this.extractWorker.onmessage = function(e) {
+                let response: Response = e.data;
+                obs.next(response.hand);
+                if (response.finished) obs.complete();
           }             
       })
-      .map((e: MessageEvent) => e.data)
   }
 
   extract(files: FileList) {
       let filesArr = Array.from(files);
-      
-      for (let i = 0; i < filesArr.length; i++) {
-            this.worker.postMessage(filesArr[i]);
-      } 
+      this.dispatchToWorker(filesArr);
 
+        this.convertedFiles$
+        .subscribe(
+          hand => this.handFileStrings.push(hand),
+          err => console.error(err),
+          () => this.convertAll()   
+      )
+  }
+
+  private dispatchToWorker(files: File[]) {
+    for (let i = 0; i < files.length; i++) {
+        this.extractWorker.postMessage({
+            file: files[i],
+            isLast: files.length - 1 === i
+        } as Message);
+      } 
+  }
+
+  private convertAll() {
+      this.result = this.handFileStrings.reduce((acc, curr) => {
+
+          let hands = curr.split('\n\n').filter(line => line.match(/\s/));
+          let convertedHands = hands.map(hand => this.hcs.getResult(hand))
+
+          return [...acc, ...convertedHands];
+      }, [])
+      console.log(this.result);
   }
 
 
 
-
-
-
 }
+
+
