@@ -1,6 +1,9 @@
 interface Response {
     finished: boolean;
-    hand: string;
+    handObject: {
+        hands: string,
+        fileName: string
+    }
 }
 
 interface Message {
@@ -11,12 +14,18 @@ interface Message {
 addEventListener('message', (e) => {
     let message: Message = e.data;
     let reader = new FileReader()
+    let name = message.file.name;
     reader.onload = (e) => {
         postMessage({
             finished: message.isLast,
-            hand: e.target['result']
+            handObject: {
+                fileName: name,
+                hands: e.target['result']
+            }
         } as Response, undefined);
     }
+        console.log(message.file)
     reader.readAsText(message.file);
+
 });
 

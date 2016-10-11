@@ -73,7 +73,7 @@ export class SingleFileReaderComponent implements OnInit, OnDestroy {
                     return value
                 })
                 .subscribe(hand => {
-                    let result: ConversionResults =  this.hcs.convertHand(hand)
+                    let result: ConversionResults = this.hcs.convertHand(hand)
                     if (result.converted) {
                          this.convertedHand = result.convertedHand;
                          this.error = null;

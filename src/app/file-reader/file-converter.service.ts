@@ -15,19 +15,29 @@ interface PipelineFn {
     (handsArray: string[]): string[]
 }
 
+interface HandObject {
+    hands: string,
+    fileName: string
+}
+
 interface Response {
     finished: boolean;
-    hand: string;
+    handObject: HandObject
+}
+
+interface ConvertAllResult {
+    convertedHands: string[],
+    errors: string[];
 }
 
 @Injectable()
 export class FileCoverterService  {
 
 
-  private handFileStrings: string[] = [];
-  private result: string[] = [];
+  private handObjects: HandObject[] = []
+  private result: ConvertAllResult
 
-  convertedFiles$: Observable<string>
+  convertedFiles$: Observable<HandObject>
   private extractWorker: Worker;
 
 
@@ -36,7 +46,7 @@ export class FileCoverterService  {
         this.convertedFiles$ = Observable.create(obs => {
             this.extractWorker.onmessage = function(e) {
                 let response: Response = e.data;
-                obs.next(response.hand);
+                obs.next(response.handObject);
                 if (response.finished) obs.complete();
           }             
       })
@@ -48,7 +58,7 @@ export class FileCoverterService  {
 
         this.convertedFiles$
         .subscribe(
-          hand => this.handFileStrings.push(hand),
+          handObject => this.handObjects.push(handObject),
           err => console.error(err),
           () => this.convertAll()   
       )
@@ -64,20 +74,34 @@ export class FileCoverterService  {
   }
 
   private convertAll() {
-      console.log('started');
-        console.time('aaa')
-            this.result = this.handFileStrings.reduce((acc, curr) => {
+    this.result = this.handObjects.reduce((acc, curr) => {
+        let fileName = curr.fileName;
+        let fileHands = curr.hands.split('\n\n').filter(line => line.match(/\s/));
 
-                let hands = curr.split('\n\n').filter(line => line.match(/\s/));
-                let convertedHands = hands.map(hand => this.hcs.getResult(hand))
+        let errors: string[] = [];
+        let convertedHands: string[] = [];
 
-                return [...acc, ...convertedHands];
-            }, [])
-        console.timeEnd('aaa');
-      console.log(this.result.length);
+        fileHands.forEach(hand => {
+            let convertionResults = this.hcs.convertHand(hand);
+            if (convertionResults.converted) {
+                convertedHands.push(convertionResults.convertedHand)
+            } else {
+                errors.push(convertionResults.error)
+            }
+        })
+        return {
+            convertedHands: [...acc.convertedHands, ...convertedHands],
+            errors: [...acc.errors, ...errors]
+        } 
+    }, { convertedHands: [], errors: [] } )
+
+    console.log(this.result);
+        
   }
 
-  private
+  private constructErrorMsg(firstLine: string, fileName: string, error: string): string {
+      return `FILE: ${firstLine} HAND: ${firstLine} could not be converted because: ERROR - ${error}`
+  }
 
 
 
