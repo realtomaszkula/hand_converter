@@ -17,4 +17,7 @@ export interface HandObject {
 }
 
 
-
+export interface HandConverterResponse {
+    errors: string[];
+    convertedHands: string[]
+}

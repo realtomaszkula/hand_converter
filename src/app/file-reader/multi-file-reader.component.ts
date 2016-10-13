@@ -56,10 +56,10 @@ export class MultiFileReaderComponent implements OnInit {
                 () => this.uploadFinished = true
             )
 
-        this.fileConverter.filesConverted$
-            .subscribe(x => console.log(x)),
-            (e) => console.error(e),
-            () => console.log('done')
+        // this.fileConverter.filesConverted$
+        //     .subscribe(x => console.log(x)),
+        //     (e) => console.error(e),
+        //     () => console.log('done')
 
     }
 }

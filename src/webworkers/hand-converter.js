@@ -298,11 +298,24 @@ var HandConverterService = (function () {
 })();
 var hcs = new HandConverterService();
 addEventListener('message', function (e) {
-    var handObject = e.data;
-    var convertedHand = hcs.convertHand(handObject.hands);
-    console.log('recieved and dispatching');
-    postMessage('hello', undefined);
+    var fileReaderResponse = e.data;
+    var handObject = fileReaderResponse.handObject;
+    var fileName = fileReaderResponse.handObject.fileName;
+    var hands = handObject.hands.split('\n\n');
+    var response = hands.reduce(function (acc, curr, i, arr) {
+        var conversionResults = hcs.convertHand(curr);
+        if (conversionResults) {
+            acc.convertedHands.push(conversionResults.convertedHand);
+        }
+        else {
+            var error = constructErrorMsg(curr, fileName, conversionResults.error);
+            acc.errors.push(error);
+        }
+        return acc;
+    }, { convertedHands: [], errors: [] });
+    postMessage(response, undefined);
 });
-function constructErrorMsg(firstLine, fileName, error) {
-    return "FILE: " + firstLine + " HAND: " + firstLine + " could not be converted because: ERROR - " + error;
+function constructErrorMsg(hand, fileName, error) {
+    var firstFewCharacters = hand.slice(0, 20);
+    return "FILE: " + fileName + " HAND: " + firstFewCharacters + " could not be converted because: ERROR - " + error;
 }

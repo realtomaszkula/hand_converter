@@ -3,12 +3,13 @@ import { Observable } from 'rxjs/Observable';
 
 import { HandConverterService, HandConverter } from './hand-converter.service';
 
-import { HandObject, Message, Response} from '../../webworkers/interfaces';
+import { HandObject, Message, Response, HandConverterResponse} from '../../webworkers/interfaces';
 
 import 'rxjs/add/operator/map';
 import 'rxjs/add/operator/count';
 import 'rxjs/add/operator/share';
 import 'rxjs/add/operator/cache';
+import 'rxjs/add/operator/scan';
 
 interface PipelineFn {
     (handsArray: string[]): string[]
@@ -19,10 +20,12 @@ interface PipelineFn {
 export class FileCoverterService  {
 
   filesLoadedToMemory$: Observable<HandObject>
-  filesConverted$: Observable<string>;
+  filesConverted$: Observable<HandConverterResponse>;
 
   private fileReaderWorker: Worker;
   private handConverterWorker: Worker;
+
+  private filesLengh: number = 0;
 
   constructor(private hcs: HandConverterService) {
         this.handConverterWorker = new Worker('../../webworkers/hand-converter.js');
@@ -35,6 +38,7 @@ export class FileCoverterService  {
         this.filesConverted$ = 
             Observable
                 .create(this.subscribeForHandCoverterWorker)
+                .share();
   }
 
   subscribeForHandCoverterWorker = (observer) => {
@@ -57,12 +61,14 @@ export class FileCoverterService  {
 
   extract(files: FileList) {
       let filesArr = Array.from(files);
+      this.filesLengh = filesArr.length;
       this.dispatchToFileReaderWorker(filesArr);
 
         this.filesLoadedToMemory$
         .subscribe(
           handObject => this.dispatchToHandConverterWorker(handObject),
           err => console.error(err), 
+          
       )
   }
 
@@ -76,8 +82,14 @@ export class FileCoverterService  {
   }
 
   private dispatchToHandConverterWorker(handObject: HandObject) {
-      console.log('dispatching')
         this.handConverterWorker.postMessage(handObject)
+
+        this.filesConverted$
+            .scan((acc, curr, index) => {
+                return Object.assign({}, acc, curr);
+            },{})
+            .subscribe(x => console.log(x));
+
   }
 
 }

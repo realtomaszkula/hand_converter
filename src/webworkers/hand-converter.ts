@@ -1,4 +1,4 @@
-import { Message, Response, HandObject } from './interfaces';
+import { Message, Response, HandObject, HandConverterResponse } from './interfaces';
 
 interface HandRegions {
     preflop: { start: number, end: number},
@@ -385,12 +385,27 @@ class HandConverterService implements HandConverter {
 let hcs: HandConverter = new HandConverterService();
 
 addEventListener('message', (e) => {
-    const handObject: HandObject = e.data;
-    let convertedHand: ConversionResults = hcs.convertHand(handObject.hands);
-    console.log('recieved and dispatching')
-    postMessage('hello', undefined);
+    const fileReaderResponse: Response = e.data;
+    const handObject: HandObject = fileReaderResponse.handObject;
+    const fileName = fileReaderResponse.handObject.fileName;
+    const hands = handObject.hands.split('\n\n');
+
+    let response = hands.reduce((acc: HandConverterResponse, curr: string, i, arr) => {
+        let conversionResults: ConversionResults = hcs.convertHand(curr);
+        if (conversionResults) {
+            acc.convertedHands.push(conversionResults.convertedHand)
+        } else {
+            let error = constructErrorMsg(curr, fileName, conversionResults.error)
+            acc.errors.push(error);
+        }
+        return acc;
+    }, { convertedHands: [], errors: []} as HandConverterResponse)
+
+
+    postMessage(response, undefined);
 });
 
-function constructErrorMsg(firstLine: string, fileName: string, error: string): string {
-    return `FILE: ${firstLine} HAND: ${firstLine} could not be converted because: ERROR - ${error}`
+function constructErrorMsg(hand: string, fileName: string, error: string): string {
+    const firstFewCharacters = hand.slice(0,20);
+    return `FILE: ${fileName} HAND: ${firstFewCharacters} could not be converted because: ERROR - ${error}`
 }
