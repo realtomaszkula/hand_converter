@@ -1,17 +1,7 @@
-interface Response {
-    finished: boolean;
-    handObject: {
-        hands: string,
-        fileName: string
-    }
-}
-
-interface Message {
-    isLast: boolean;
-    file: File;
-}
+import { HandObject, Message, Response} from './interfaces';
 
 addEventListener('message', (e) => {
+
     let message: Message = e.data;
     let reader = new FileReader()
     let name = message.file.name;

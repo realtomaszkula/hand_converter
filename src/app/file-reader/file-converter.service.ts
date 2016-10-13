@@ -3,108 +3,82 @@ import { Observable } from 'rxjs/Observable';
 
 import { HandConverterService, HandConverter } from './hand-converter.service';
 
+import { HandObject, Message, Response} from '../../webworkers/interfaces';
+
 import 'rxjs/add/operator/map';
 import 'rxjs/add/operator/count';
 import 'rxjs/add/operator/share';
-
-interface Message {
-    isLast: boolean;
-    file: File;
-}
+import 'rxjs/add/operator/cache';
 
 interface PipelineFn {
     (handsArray: string[]): string[]
 }
 
-interface HandObject {
-    hands: string,
-    fileName: string
-}
-
-interface Response {
-    finished: boolean;
-    handObject: HandObject
-}
-
-interface ConvertAllResult {
-    convertedHands: string[],
-    errors: string[];
-}
 
 @Injectable()
 export class FileCoverterService  {
 
-  private handObjects: HandObject[] = []
-  private result: ConvertAllResult
+  filesLoadedToMemory$: Observable<HandObject>
+  filesConverted$: Observable<string>;
 
-  convertedFiles$: Observable<HandObject>
-  private extractWorker: Worker;
-
+  private fileReaderWorker: Worker;
+  private handConverterWorker: Worker;
 
   constructor(private hcs: HandConverterService) {
-        this.extractWorker = new Worker('webworkers/name-worker.js');
-        this.convertedFiles$ = Observable.create(obs => {
-            this.extractWorker.onmessage = function(e) {
-                let response: Response = e.data;
-                obs.next(response.handObject);
-                if (response.finished) obs.complete();
-          }             
-      })
-      .share()
+        this.handConverterWorker = new Worker('../../webworkers/hand-converter.js');
+        this.fileReaderWorker = new Worker('../../webworkers/file-reader.js');
+        this.filesLoadedToMemory$ =  
+            Observable
+                .create(this.subscribeForFileReaderWorker)
+                .share();
+        
+        this.filesConverted$ = 
+            Observable
+                .create(this.subscribeForHandCoverterWorker)
+  }
+
+  subscribeForHandCoverterWorker = (observer) => {
+      this.handConverterWorker.onmessage = function(e) {
+          let response = e.data;
+          observer.next(response);
+          if (response.finished) {
+              observer.complete();
+          }
+      }
+  }
+
+  subscribeForFileReaderWorker = (observer) =>{
+    this.fileReaderWorker.onmessage = function(e) {
+        let response: Response = e.data;
+        observer.next(response);
+        if (response.finished) observer.complete();
+    }             
   }
 
   extract(files: FileList) {
       let filesArr = Array.from(files);
-      this.dispatchToWorker(filesArr);
+      this.dispatchToFileReaderWorker(filesArr);
 
-        this.convertedFiles$
+        this.filesLoadedToMemory$
         .subscribe(
-          handObject => this.handObjects.push(handObject),
-          err => console.error(err),
-          () => this.convertAll()   
+          handObject => this.dispatchToHandConverterWorker(handObject),
+          err => console.error(err), 
       )
   }
 
-  private dispatchToWorker(files: File[]) {
+  private dispatchToFileReaderWorker(files: File[]) {
     for (let i = 0; i < files.length; i++) {
-        this.extractWorker.postMessage({
+        this.fileReaderWorker.postMessage({
             file: files[i],
             isLast: files.length - 1 === i
         } as Message);
       } 
   }
 
-  // this will move to ww in the future
-  private convertAll() {
-    this.result = this.handObjects.reduce((acc, curr) => {
-        let fileName = curr.fileName;
-        let fileHands = curr.hands.split('\n\n').filter(line => line.match(/\s/));
-
-        let errors: string[] = [];
-        let convertedHands: string[] = [];
-
-        fileHands.forEach(hand => {
-            let convertionResults = this.hcs.convertHand(hand);
-            if (convertionResults.converted) {
-                convertedHands.push(convertionResults.convertedHand)
-            } else {
-                errors.push(convertionResults.error)
-            }
-        })
-        return {
-            convertedHands: [...acc.convertedHands, ...convertedHands],
-            errors: [...acc.errors, ...errors]
-        } 
-    }, { convertedHands: [], errors: [] } )
-
-        
+  private dispatchToHandConverterWorker(handObject: HandObject) {
+      console.log('dispatching')
+        this.handConverterWorker.postMessage(handObject)
   }
-
-  private constructErrorMsg(firstLine: string, fileName: string, error: string): string {
-      return `FILE: ${firstLine} HAND: ${firstLine} could not be converted because: ERROR - ${error}`
-  }
-
-
 
 }
 

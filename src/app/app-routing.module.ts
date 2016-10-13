@@ -7,7 +7,7 @@ import { SingleFileReaderComponent } from './file-reader/single-file-reader.comp
 const routes: Routes = [
   {
     path: '',
-    redirectTo: 'file',
+    redirectTo: 'files',
     pathMatch: 'full'
   },
   {

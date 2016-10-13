@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Message, Response, HandObject } from './interfaces';
 
 interface HandRegions {
     preflop: { start: number, end: number},
@@ -10,18 +10,17 @@ interface PipelineFn {
     (source: string[]): string[];
 }
 
-export interface ConversionResults {
+interface ConversionResults {
     converted: boolean;
     error?: string;
     convertedHand?: string
 }
 
-export abstract class HandConverter {
+abstract class HandConverter {
     convertHand: (hand: string) => ConversionResults;
 }
 
-@Injectable()
-export class HandConverterService implements HandConverter {
+class HandConverterService implements HandConverter {
 
     /* 
         Capture groups: 
@@ -380,6 +379,18 @@ export class HandConverterService implements HandConverter {
 
         return originalString.replace(stakesString, newStakesString);
     }
+}
 
 
+let hcs: HandConverter = new HandConverterService();
+
+addEventListener('message', (e) => {
+    const handObject: HandObject = e.data;
+    let convertedHand: ConversionResults = hcs.convertHand(handObject.hands);
+    console.log('recieved and dispatching')
+    postMessage('hello', undefined);
+});
+
+function constructErrorMsg(firstLine: string, fileName: string, error: string): string {
+    return `FILE: ${firstLine} HAND: ${firstLine} could not be converted because: ERROR - ${error}`
 }

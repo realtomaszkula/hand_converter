@@ -7,6 +7,7 @@ import 'rxjs/add/operator/map';
 import 'rxjs/add/operator/count';
 import 'rxjs/add/operator/do';
 import 'rxjs/add/operator/delay';
+import 'rxjs/add/operator/publishReplay';
 
 import { FileCoverterService } from './file-converter.service';
 import { HandConverterService, HandConverter } from './hand-converter.service';
@@ -22,7 +23,8 @@ export class MultiFileReaderComponent implements OnInit {
 
     @ViewChild('handsInput') inputRef: ElementRef;
 
-    progressCounter = 0;
+    loadedToMemoryCounter = 0;
+    convertedCounter = 0;
     uploadedHandsCount = 0;
     uploadFinished = false;
 
@@ -43,15 +45,21 @@ export class MultiFileReaderComponent implements OnInit {
             });
 
 
-        this.fileConverter.convertedFiles$
+        this.fileConverter.filesLoadedToMemory$
             .count(x => true)
             .subscribe(
                 (count) => {
-                    this.progressCounter = count / this.uploadedHandsCount * 100
+                    this.loadedToMemoryCounter = count / this.uploadedHandsCount * 100
                     this.cd.detectChanges();
                 },
                 (error) => console.error(error),
                 () => this.uploadFinished = true
             )
+
+        this.fileConverter.filesConverted$
+            .subscribe(x => console.log(x)),
+            (e) => console.error(e),
+            () => console.log('done')
+
     }
 }
