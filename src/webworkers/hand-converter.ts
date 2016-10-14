@@ -133,14 +133,15 @@ class HandConverterService implements HandConverter {
 
         try {
             result.convertedHand = this.convert(hand);
+            result.converted = true;
         } 
         
         catch (e) { 
             result.error = e;
+            result.converted = false;
         }
 
         finally {
-            result.converted = result.error ? false : true;
              return result;
         }
     }
@@ -392,7 +393,7 @@ addEventListener('message', (e) => {
 
     let response = hands.reduce((acc: HandConverterResponse, curr: string, i, arr) => {
         let conversionResults: ConversionResults = hcs.convertHand(curr);
-        if (conversionResults) {
+        if (conversionResults.converted) {
             acc.convertedHands.push(conversionResults.convertedHand)
         } else {
             let error = constructErrorMsg(curr, fileName, conversionResults.error)
@@ -401,11 +402,10 @@ addEventListener('message', (e) => {
         return acc;
     }, { convertedHands: [], errors: []} as HandConverterResponse)
 
-
     postMessage(response, undefined);
 });
 
 function constructErrorMsg(hand: string, fileName: string, error: string): string {
-    const firstFewCharacters = hand.slice(0,20);
+    const firstFewCharacters = hand.slice(0,50);
     return `FILE: ${fileName} HAND: ${firstFewCharacters} could not be converted because: ERROR - ${error}`
 }

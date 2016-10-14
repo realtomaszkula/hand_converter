@@ -84,11 +84,15 @@ export class FileCoverterService  {
   private dispatchToHandConverterWorker(handObject: HandObject) {
         this.handConverterWorker.postMessage(handObject)
 
+        const seed: HandConverterResponse = { errors: [], convertedHands: []}
         this.filesConverted$
             .scan((acc, curr, index) => {
-                return Object.assign({}, acc, curr);
-            },{})
+                 acc.convertedHands = [...acc.convertedHands, ...curr.convertedHands]
+                 acc.errors = [...acc.errors, ...curr.errors]
+                 return acc;
+            },seed)
             .subscribe(x => console.log(x));
+            
 
   }
 

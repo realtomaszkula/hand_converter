@@ -241,12 +241,13 @@ var HandConverterService = (function () {
         var result = {};
         try {
             result.convertedHand = this.convert(hand);
+            result.converted = true;
         }
         catch (e) {
             result.error = e;
+            result.converted = false;
         }
         finally {
-            result.converted = result.error ? false : true;
             return result;
         }
     };
@@ -304,7 +305,7 @@ addEventListener('message', function (e) {
     var hands = handObject.hands.split('\n\n');
     var response = hands.reduce(function (acc, curr, i, arr) {
         var conversionResults = hcs.convertHand(curr);
-        if (conversionResults) {
+        if (conversionResults.converted) {
             acc.convertedHands.push(conversionResults.convertedHand);
         }
         else {
@@ -316,6 +317,6 @@ addEventListener('message', function (e) {
     postMessage(response, undefined);
 });
 function constructErrorMsg(hand, fileName, error) {
-    var firstFewCharacters = hand.slice(0, 20);
+    var firstFewCharacters = hand.slice(0, 50);
     return "FILE: " + fileName + " HAND: " + firstFewCharacters + " could not be converted because: ERROR - " + error;
 }
